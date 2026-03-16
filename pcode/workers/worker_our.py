@@ -20,7 +20,7 @@ import  time
 import copy
 import clip
 import os
-
+import math
 
 class WorkerFedOur(object):
     def __init__(self, conf):
@@ -40,8 +40,8 @@ class WorkerFedOur(object):
         
         # create dataset (as well as the potential data_partitioner) for training.
         self.anchor_weight = torch.tensor([0.125, 0.25, 0.5, 1.0], device=self.device)
-        self.text_model, _ = self.load_clip_text_model()
-        self.anchor = self.generate_text_anchors()
+        self.text_model, _ = self.load_clip_text_model() # 加载文本编码器
+        self.anchor = self.generate_text_anchors() #并生成锚点
         self.output_dim = self.anchor[0].shape[-1] 
         
         print(f"Anchors generated. Count: {len(self.anchor)}, Dim: {self.output_dim}")
@@ -267,7 +267,10 @@ class WorkerFedOur(object):
             if self._terminate_by_complete_training():
                 return
     def extra_init(self):
-        pass
+        # pass
+
+        # 将第4层（最后一层）的文本锚点传给模型
+            self.model.set_text_anchors(self.anchor[-1].clone().detach().to(self.device))
 
     def listen_to_master(self):
         # listen to master, related to the function `_activate_selected_clients` in `master.py`.
@@ -396,10 +399,17 @@ class WorkerFedOur(object):
             else:
                 raise ValueError("local_training_with_extra_calculate")
             sleleted_anchor = self.anchor[-1][current_target]
-            aligned_feature = self.model.clip_adapter(feature)
-            aligned_feature = F.normalize(aligned_feature, p=2,dim=1)
-            mse_loss = F.mse_loss(aligned_feature, sleleted_anchor)
-            total_loss = total_loss + 5.0*mse_loss
+            # aligned_feature = self.model.clip_adapter(feature)
+            # aligned_feature = F.normalize(aligned_feature, p=2,dim=1)
+            # mse_loss = F.mse_loss(feature, sleleted_anchor)
+            # total_loss = total_loss + 3.0*mse_loss
+            current_epoch = self.conf.graph.comm_round
+            max_epochs = self.conf.n_comm_rounds
+            # 权重从 5.0 逐渐衰减到 0.5
+            dynamic_weight = 0.5 + 4.5 * (1 + math.cos(math.pi * current_epoch / max_epochs)) / 2
+            
+            mse_loss = F.mse_loss(feature, sleleted_anchor)
+            total_loss = total_loss + dynamic_weight * mse_loss
 
         return total_loss
 

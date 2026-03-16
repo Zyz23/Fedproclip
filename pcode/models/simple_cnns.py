@@ -159,7 +159,7 @@ class CNNCifar5Layer(nn.Module):
         self.pool = nn.MaxPool2d(2, 2)
         
         # Dropout (防止过拟合)
-        # self.dropout = nn.Dropout(p=0.5)
+        self.dropout = nn.Dropout(p=0.5)
 
         # 计算全连接层输入维度
         # 32x32 -> (Pool) -> 16x16 -> (Pool) -> 8x8 -> (Pool) -> 4x4
@@ -205,7 +205,7 @@ class CNNCifar5Layer(nn.Module):
         
         # FC Block
         x = F.relu(self.fc1(x))
-        # x = self.dropout(x)     # 关键：训练时随机丢弃神经元
+        x = self.dropout(x)     # 关键：训练时随机丢弃神经元
         
         logits = self.classifier(x)
 
@@ -256,7 +256,7 @@ class MetaCNN(nn.Module):
 
         # 池化与Dropout
         self.pool = nn.MaxPool2d(2, 2)
-        # self.dropout = nn.Dropout(p=0.5)
+        self.dropout = nn.Dropout(p=0.5)
 
         # 计算Flatten后的维度: 256 * 4 * 4 = 4096
         self.flat_dim = 256 * 4 * 4
@@ -270,16 +270,25 @@ class MetaCNN(nn.Module):
                                         rank_rate=rank_rate, bias=w_fc_bias)
 
         # === Classifier (保持固定) ===
-        self.classifier = nn.Linear(512, self.num_classes, bias=w_fc_bias)
+        # self.classifier = nn.Linear(512, self.num_classes, bias=w_fc_bias) # 去掉分类器 基于原型推理
 
         # [ADD] 新增全局共享、可训练的 CLIP 适配层
         # 输入是 fc1 输出的 512 维特征，输出是对齐 CLIP 的 512 维特征
         self.clip_adapter = nn.Sequential(
                 nn.Linear(512, 512),
-                nn.GroupNorm(16, 512),
-                nn.ReLU(inplace=True),
-                nn.Linear(512, 512)
+                # nn.GroupNorm(16, 512),
+                # nn.ReLU(inplace=True),
+                # nn.Linear(512, 512)
                 )
+        
+        # 类似 CLIP 的温度系数
+        self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
+    
+    def set_text_anchors(self, anchors):
+        """设置文本锚点特征 (CLIP 生成的文本特征)"""
+        anchors = F.normalize(anchors,p=2, dim=-1) # L2 归一化
+
+        self.register_buffer('text_anchors', anchors, persistent=False) # 不更新也不打包传播
 
     def forward(self, x):
         # Layer 1
@@ -304,10 +313,22 @@ class MetaCNN(nn.Module):
         x = F.relu(x)
         
         # Dropout & Classifier
-        # x = self.dropout(x)
-        logits = self.classifier(x)
+        x = self.dropout(x)
+        # logits = self.classifier(x)
 
-        return x, logits
+        # 特征对其归一化
+        aligned_feature = self.clip_adapter(x) # 适配层对齐 CLIP 特征空间
+        aligned_feature = F.normalize(aligned_feature, p=2, dim=-1) # L2 归一化
+
+        if hasattr(self, 'text_anchors') and self.text_anchors is not None:
+            # 计算与文本锚点的相似度 (点积) 并应用温度缩放
+            # logits = self.logit_scale.exp() * aligned_feature @ self.text_anchors.T
+            logit_scale = torch.clamp(self.logit_scale.exp(), max=100.0)
+            logits = logit_scale * aligned_feature @ self.text_anchors.T
+        else:
+            print("Warning: Text anchors not set. Returning unscaled features as logits.")
+
+        return aligned_feature, logits
 
     # === 模型分解与恢复方法 ===
 
