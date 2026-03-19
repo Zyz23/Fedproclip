@@ -434,8 +434,8 @@ class MasterFedHM(object):
                         if not isinstance(m.conv1, nn.Conv2d):
                             m.recover()
             elif "cnn" in self.conf.arch:
-                if model.meta:
-                    model.recover_model()
+                # if model.meta:
+                model.recover_model()
             model.to('cuda')
             # -----------------------------------------------------------
             # 【步骤 2：加载全量参数】

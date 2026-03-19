@@ -622,9 +622,9 @@ python run_gloo.py \
     --arch federated_averaging_cnn \
     --complex_arch master=federated_averaging_cnn,worker=federated_averaging_cnn \
     --method fedour \
-    --experiment fed_our_noiid \
+    --experiment 3.18fed_our_noiid_0.1小模型 \
     --group_norm_num_groups 16 \
-    --data cifar10 \
+    --data cifar100 \
     --pin_memory True \
     --batch_size 64 \
     --num_workers 2 \
@@ -658,7 +658,7 @@ python run_gloo.py \
     --manual_seed 7 \
     --pn_normalize True \
     --same_seed_process False \
-    --port 51091 \
+    --port 51093 \
     --train_fast True \
     --meta True \
     --decom_rule 0 1 \
@@ -676,9 +676,9 @@ python run_gloo.py \
     --arch federated_averaging_cnn \
     --complex_arch master=federated_averaging_cnn,worker=federated_averaging_cnn \
     --method fedhm \
-    --experiment fedhm \
+    --experiment 3.17fedhm小模型 \
     --group_norm_num_groups 16 \
-    --data cifar10 \
+    --data cifar100 \
     --pin_memory True \
     --batch_size 64 \
     --num_workers 2 \
@@ -818,9 +818,9 @@ python run_gloo.py \
     --arch federated_averaging_cnn \
     --complex_arch master=federated_averaging_cnn,worker=federated_averaging_cnn \
     --method fedavg \
-    --experiment avg \
+    --experiment 3.17avg_Niid0.1——小模型 \
     --group_norm_num_groups 16 \
-    --data cifar10 \
+    --data cifar100 \
     --pin_memory True \
     --batch_size 64 \
     --num_workers 2 \
@@ -854,7 +854,7 @@ python run_gloo.py \
     --manual_seed 7 \
     --pn_normalize True \
     --same_seed_process False \
-    --port 50027 \
+    --port 50026 \
     --train_fast True \
     --resnet_scaling 4
 
@@ -899,7 +899,7 @@ python run_gloo.py \
     --hostfile hostfile \
     --manual_seed 7 \
     --pn_normalize True \
-    --same_seed_process True \
+    --same_seed_process False \
     --port 50011 \
     --train_fast True \
 

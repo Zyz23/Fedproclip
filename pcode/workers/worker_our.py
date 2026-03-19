@@ -354,7 +354,7 @@ class WorkerFedOur(object):
 
     def local_training_with_extra_calculate(self, loss, output, data_batch, feature=None, target=None):
         # 1. 基础损失
-        total_loss = loss + self.conf.meta_L2 * self.model.L2_decay()
+        total_loss = loss + self.conf.meta_L2 * self.model.get_decomposed_loss()
 
         # 2. 计算层级锚点损失
         # 检查是否开启对齐 (可以通过 output 里的 stage_features 是否为空，或者 check use_align)

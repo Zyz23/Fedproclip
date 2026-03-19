@@ -322,62 +322,7 @@ class MasterFedOur(object):
 
             return anchors_list # 返回包含 4 个 Tensor 的列表
 
-### 只有在resnet下才能用这个函数
 
-    # def decom_recover_loss(self):
-    #     self.master_model.eval()
-    #     self.master_model.to('cuda')
-    #     old_state_dict = copy.deepcopy(self.master_model.state_dict())
-
-
-    #     for m in self.master_model.modules():
-    #             if isinstance(m, MetaBasicBlock):
-    #                 m.decom(100000000)
-
-
-    #     self.master_model.to('cuda')
-    #     for m in self.master_model.modules():
-    #             if isinstance(m, MetaBasicBlock):
-    #                 m.recover()
-        
-    #     new_state_dict = copy.deepcopy(self.master_model.state_dict())
-        
-    #     total_diff = 0.0
-    #     max_diff = 0.0
-
-    #     for key in old_state_dict:
-    #         # 只比较卷积层权重，跳过 num_batches_tracked 等统计量
-    #         if 'weight' in key or 'bias' in key:
-    #             w_old = old_state_dict[key].float()
-    #             # 确保 new_state_dict 里有这个 key (因为分解层结构变了又变回来，key 应该一致)
-    #             if key in new_state_dict:
-    #                 w_new = new_state_dict[key].float()
-    #                 # 计算两个张量的差异 (L1 距离)
-    #                 diff = (w_old - w_new).abs().sum().item()
-    #                 # 记录最大元素级误差
-    #                 current_max = (w_old - w_new).abs().max().item()
-                    
-    #                 total_diff += diff
-    #                 max_diff = max(max_diff, current_max)
-    #             else:
-    #                 print(f"⚠️ 警告: Key {key} 在还原后的模型中丢失！")
-
-    #     self.master_model.to('cpu')
-        
-    #     print(f"📊 检查结果:")
-    #     print(f"   累积总误差 (Sum Abs Diff): {total_diff:.4f}")
-    #     print(f"   最大单点误差 (Max Abs Diff): {max_diff:.6f}")
-    #     # 6. 自动判断
-    #     if max_diff < 1e-3:
-    #         print("✅ 成功: 还原误差极小。SVD 维度变换逻辑正确！")
-    #     else:
-    #         print("❌ 失败: 还原误差过大！")
-    #         print("   原因可能是：")
-    #         print("   1. decom/recover 里的 permute/view 维度搞反了 (最可能)。")
-    #         print("   2. decom 时传入的 Rank 太小，导致信息被大量截断。")
-    #     print("="*40 + "\n")
-
-    #     self.master_model.to('cpu')
 
     def run(self):
 
@@ -689,8 +634,8 @@ class MasterFedOur(object):
                         if not isinstance(m.conv1, nn.Conv2d):
                             m.recover()
             elif "cnn" in self.conf.arch:
-                if model.meta:
-                    model.recover_model()
+                # if model.meta:
+                model.recover_model()
             model.to('cuda:7')
             # -----------------------------------------------------------
             # 【步骤 2：加载全量参数】
